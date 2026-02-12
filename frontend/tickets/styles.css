@@ -1,0 +1,60 @@
+
+/* styles.css - diseño limpio y responsive */
+:root{
+  --bg:#f6f8fb; --card:#ffffff; --accent:#2563eb; --muted:#6b7280;
+  --success:#059669; --danger:#ef4444; --radius:12px; --maxw:980px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Segoe UI,system-ui,Arial,sans-serif;background:var(--bg);color:#111827}
+.page{max-width:var(--maxw);margin:28px auto;padding:16px}
+.header{text-align:center;margin-bottom:18px}
+.header h1{margin:0;font-size:28px;color:var(--accent)}
+.subtitle{margin:4px 0 0;color:var(--muted)}
+
+/* Card (recuadro) */
+.card{background:var(--card);border-radius:var(--radius);padding:18px;margin:12px 0;box-shadow:0 6px 18px rgba(15,23,42,0.06)}
+
+.form-card h2{margin:0 0 12px}
+.ticket-form .row{margin-bottom:12px}
+.ticket-form label{display:block;margin-bottom:6px;font-weight:600;color:#111827}
+.ticket-form select,.ticket-form textarea{
+  width:100%;padding:10px 12px;border:1px solid #e6e9ef;border-radius:8px;font-size:14px;background:#fff;outline:none
+}
+.ticket-form textarea{min-height:110px;resize:vertical}
+
+/* Botones */
+.actions{display:flex;gap:8px;margin-top:8px}
+.btn{border:none;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600}
+.btn.primary{background:var(--accent);color:white}
+.btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(37,99,235,0.12)}
+
+/* Lista de tickets */
+.list-card h2{margin:0 0 12px}
+.tickets-list{display:flex;flex-direction:column;gap:10px}
+.ticket{
+  border-left:6px solid var(--accent);padding:12px;border-radius:8px;background:#fbfdff;
+  display:flex;justify-content:space-between;gap:12px;align-items:flex-start
+}
+.ticket .meta{font-size:13px;color:var(--muted);margin-bottom:8px}
+.ticket .desc{margin:6px 0 0;color:#111827}
+.ticket .right{min-width:160px;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.status{padding:6px 8px;border-radius:8px;font-weight:700;font-size:13px;color:white}
+.status.pending{background:#f59e0b}
+.status.processing{background:#06b6d4}
+.status.closed{background:var(--success)}
+.small{font-size:13px;color:var(--muted)}
+
+/* Controles pequeños */
+.controls button{margin-left:6px;padding:6px 8px;border-radius:8px;border:0;cursor:pointer}
+.controls .btn-sm{background:#eef2ff;color:var(--accent);font-weight:700}
+.controls .btn-danger{background:#fee2e2;color:var(--danger)}
+
+/* Comentarios */
+.comments{margin-top:10px;border-top:1px dashed #e6e9ef;padding-top:10px}
+.comment{font-size:13px;padding:8px;background:#fff;border-radius:8px;margin-bottom:6px;border:1px solid #f1f5f9}
+
+/* Responsive */
+@media(max-width:720px){
+  .ticket{flex-direction:column;align-items:stretch}
+  .right{align-items:flex-start}
+}

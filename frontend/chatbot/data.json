@@ -1,0 +1,18 @@
+{
+  "items": [
+    {
+      "id": "a1",
+      "title": "Reiniciar servicio X",
+      "category": "Ops",
+      "keywords": "reiniciar,servicio,systemd",
+      "content": "Para reiniciar el servicio X ejecute: systemctl restart x.service"
+    },
+    {
+      "id": "a2",
+      "title": "Ubicación de logs",
+      "category": "Infra",
+      "keywords": "logs,ubicacion",
+      "content": "Los logs se encuentran en /var/log/miapp/ y se rotan semanalmente."
+    }
+  ]
+}

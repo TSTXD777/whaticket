@@ -1,0 +1,34 @@
+/* styles.css
+   Estilos básicos para la UI: layout responsive, tarjetas de artículos,
+   área del chatbot y formulario.
+*/
+*{box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+body{margin:0;padding:0;background:#f6f7fb;color:#222}
+header{background:#2b6cb0;color:white;padding:16px}
+header h1{margin:0;font-size:20px}
+.search-area{margin-top:8px;display:flex;gap:8px}
+.search-area input{flex:1;padding:8px;border-radius:4px;border:1px solid #d0d7e2}
+.search-area button{padding:8px 10px;border:none;border-radius:4px;background:#fff;color:#2b6cb0;cursor:pointer}
+main{display:flex;gap:16px;padding:16px}
+.left{flex:2}
+.right{flex:1}
+.articles{display:flex;flex-direction:column;gap:8px}
+.article{background:white;padding:12px;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.article h3{margin:0 0 6px 0}
+.article .meta{font-size:12px;color:#666;margin-bottom:8px}
+.article .actions{display:flex;gap:8px}
+.article button{padding:6px 8px;border-radius:4px;border:1px solid #d0d7e2;background:#fff;cursor:pointer}
+.chatbot{background:white;padding:12px;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.06);margin-bottom:12px}
+.chat-log{height:180px;overflow:auto;border:1px solid #e2e8f0;padding:8px;border-radius:4px;background:#fcfdff}
+.chat-log .msg{margin-bottom:8px}
+.chat-log .user{font-weight:600}
+.chat-log .bot{color:#0b63a4}
+.chat-ui{display:flex;gap:8px;margin-top:8px}
+.chat-ui input{flex:1;padding:8px;border-radius:4px;border:1px solid #d0d7e2}
+.form-area{margin-top:12px;background:white;padding:12px;border-radius:6px}
+.form-area label{display:block;margin-bottom:8px}
+.form-area input,.form-area textarea{width:100%;padding:8px;border-radius:4px;border:1px solid #d0d7e2}
+.form-actions{display:flex;gap:8px}
+.form-actions button{padding:8px;border-radius:4px;border:none;background:#2b6cb0;color:white;cursor:pointer}
+
+@media(max-width:900px){main{flex-direction:column}.right{order:-1}}

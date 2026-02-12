@@ -1,0 +1,10 @@
+[
+    {
+        "id": 1,
+        "categoria": "Software",
+        "prioridad": "Alta",
+        "descripcion": "El sistema esta lento al iniciar sesión",
+        "estado": "Cerrado",
+        "comentarios": []
+    }
+]

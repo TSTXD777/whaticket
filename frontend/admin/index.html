@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Whaticket - Panel Administrativo</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #60a5fa 100%);
+      min-height: 100vh;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .navbar-custom {
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%) !important;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .card {
+      border: none;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      backdrop-filter: blur(10px);
+      background: rgba(255,255,255,0.95);
+      transition: transform 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+    }
+    .btn-custom {
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+      border: none;
+      border-radius: 25px;
+      padding: 12px 30px;
+      color: white;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    .btn-custom:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(30, 58, 138, 0.3);
+      color: white;
+    }
+    .btn-outline-custom {
+      border: 2px solid #3b82f6;
+      color: #3b82f6;
+      border-radius: 25px;
+      padding: 10px 25px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    .btn-outline-custom:hover {
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+      border-color: transparent;
+      color: white;
+    }
+    .form-control:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+    }
+    .category-item {
+      background: #f8f9fa;
+      border-radius: 10px;
+      padding: 10px 15px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .category-item:hover {
+      background: #e9ecef;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="#">
+        <i class="bi bi-gear-fill me-2"></i>Panel Administrativo
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="../index.html">
+              <i class="bi bi-house-door me-1"></i>Inicio
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container-fluid py-4">
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+        <!-- Categories Management -->
+        <div class="card mb-4">
+          <div class="card-header bg-white">
+            <h4 class="mb-0">
+              <i class="bi bi-tags-fill me-2 text-primary"></i>
+              Gestión de Categorías
+            </h4>
+            <small class="text-muted">Administra las categorías disponibles para los tickets</small>
+          </div>
+          <div class="card-body">
+            <!-- Add Category Form -->
+            <div class="row mb-4">
+              <div class="col-md-8">
+                <input type="text" id="catInput" class="form-control form-control-lg"
+                       placeholder="Nombre de la nueva categoría...">
+              </div>
+              <div class="col-md-4">
+                <button id="addCat" class="btn btn-custom w-100">
+                  <i class="bi bi-plus-circle me-2"></i>Agregar Categoría
+                </button>
+              </div>
+            </div>
+
+            <!-- Categories List -->
+            <div class="mb-3">
+              <h6 class="fw-bold text-muted mb-3">
+                <i class="bi bi-list-ul me-1"></i>Categorías Existentes
+              </h6>
+              <div id="listaCategorias">
+                <!-- Categories will be loaded here -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chatbot Configuration -->
+        <div class="card mb-4">
+          <div class="card-header bg-white">
+            <h4 class="mb-0">
+              <i class="bi bi-robot me-2 text-success"></i>
+              Configuración del Chatbot
+            </h4>
+            <small class="text-muted">Personaliza el mensaje de bienvenida del asistente virtual</small>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label for="chatbotMsg" class="form-label">
+                <i class="bi bi-chat-quote me-1"></i>Mensaje de Bienvenida
+              </label>
+              <textarea id="chatbotMsg" class="form-control" rows="4"
+                        placeholder="Escribe el mensaje de bienvenida que mostrará el chatbot..."></textarea>
+            </div>
+            <button id="saveChatbot" class="btn btn-custom">
+              <i class="bi bi-save me-2"></i>Guardar Configuración
+            </button>
+          </div>
+        </div>
+
+        <!-- System Statistics -->
+        <div class="card">
+          <div class="card-header bg-white">
+            <h4 class="mb-0">
+              <i class="bi bi-graph-up me-2 text-info"></i>
+              Estadísticas del Sistema
+            </h4>
+            <small class="text-muted">Información general del sistema</small>
+          </div>
+          <div class="card-body">
+            <div class="row text-center">
+              <div class="col-md-3 mb-3">
+                <div class="p-3 bg-light rounded">
+                  <h3 class="text-primary mb-1" id="totalCategories">-</h3>
+                  <small class="text-muted">Categorías</small>
+                </div>
+              </div>
+              <div class="col-md-3 mb-3">
+                <div class="p-3 bg-light rounded">
+                  <h3 class="text-success mb-1" id="totalTickets">-</h3>
+                  <small class="text-muted">Total Tickets</small>
+                </div>
+              </div>
+              <div class="col-md-3 mb-3">
+                <div class="p-3 bg-light rounded">
+                  <h3 class="text-warning mb-1" id="activeTickets">-</h3>
+                  <small class="text-muted">Tickets Activos</small>
+                </div>
+              </div>
+              <div class="col-md-3 mb-3">
+                <div class="p-3 bg-light rounded">
+                  <h3 class="text-info mb-1" id="totalUsers">-</h3>
+                  <small class="text-muted">Usuarios</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

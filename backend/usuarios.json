@@ -1,0 +1,26 @@
+[
+    {
+        "nombre": "Stefany Carias",
+        "correo": "stefanydayanaracariasgarcia@gmail.com",
+        "rol": "tecnico",
+        "activo": true
+    },
+    {
+        "nombre": "Dayanara",
+        "correo": "stefanycarias@gmail.com",
+        "rol": "usuario",
+        "activo": true
+    },
+    {
+        "nombre": "Stefany",
+        "correo": "carias27@gmail.com",
+        "rol": "admin",
+        "activo": true
+    },
+    {
+        "nombre": "Stefany",
+        "correo": "carias27@gmail.com",
+        "rol": "admin",
+        "activo": false
+    }
+]
