@@ -10,7 +10,7 @@ Si hay bugs, dejar un comentario mencionando el problema "BUG: descripción del 
 - [ ] Abel @Abel52080
 - [ ] Stephany @stefanycarias
 - [ ] César @Jona-giron25
-- [ ] Jeymi
+- [ ] Jeymi @JCarcamo06
 - [X] Hyrum @TSTXD777
 
 # Archivo de TODO (Cosas por hacer)
