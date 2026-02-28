@@ -7,7 +7,7 @@ Cómo vamos a trabajar en equipo, les recomiendo trabajar y hacer commits en la 
 Además, vamos hacer los commits de ser posible cuando una cosa que hacer esté completada y (si posible) libre de bugs. Siempre dejar comentarios de lo que hicieron, tanto en el código, como en la descripción del commit. 
 Si hay bugs, dejar un comentario mencionando el problema "BUG: descripción del bug". "y si hay que asignarle algo a alguien, hacer la mención via "@usuario".
 
-- [ ] Abel @Abel52080
+- [X] Abel @Abel52080
 - [ ] Stephany @stefanycarias
 - [ ] César @Jona-giron25
 - [X] Jeymi @JCarcamo06
