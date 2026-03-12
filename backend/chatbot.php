@@ -24,6 +24,75 @@ try {
     die(json_encode(['ok'=>false, 'msg'=>'Connection failed: ' . $e->getMessage()]));
 }
 
+// Función auxiliar para conectar con Ollama
+function connectOllama($prompt, $model = 'gemini-3-flash-preview:cloud', $context = []) {
+    $ollamaUrl = 'http://localhost:11434/api/generate';
+    
+    // Construir mensaje del sistema con contexto de KB
+    $systemMsg = "Eres un asistente de soporte técnico. Responde de forma clara y concisa.";
+    if (!empty($context)) {
+        $contextText = "Contexto relevante de la base de conocimiento:\n";
+        foreach ($context as $idx => $article) {
+            $contextText .= "\n[" . ($idx + 1) . "] " . $article['title'] . "\n";
+            $contextText .= substr($article['content'], 0, 500) . "...\n";
+        }
+        $systemMsg .= "\n\n" . $contextText;
+    }
+    
+    // Preparar payload para Ollama
+    $payload = [
+        'model' => $model,
+        'prompt' => $prompt,
+        'system' => $systemMsg,
+        'stream' => false,  // No usar streaming para simplificar respuesta
+        'temperature' => 0.7
+    ];
+    
+    // Realizar request a Ollama
+    $ch = curl_init($ollamaUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+    curl_setopt($ch, CURLOPT_TIMEOUT, 60);  // 60 segundos de timeout
+    
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+    
+    // Manejo de errores
+    if ($curlError) {
+        return [
+            'ok' => false,
+            'msg' => 'Error de conexión con Ollama: ' . $curlError
+        ];
+    }
+    
+    if ($httpCode !== 200) {
+        return [
+            'ok' => false,
+            'msg' => 'Ollama respondió con código: ' . $httpCode
+        ];
+    }
+    
+    // Parsear respuesta
+    $decoded = json_decode($response, true);
+    if (!$decoded || !isset($decoded['response'])) {
+        return [
+            'ok' => false,
+            'msg' => 'Respuesta inválida de Ollama'
+        ];
+    }
+    
+    // Limpiar respuesta (Ollama puede incluir caracteres especiales)
+    $ollamaResponse = trim($decoded['response']);
+    
+    return [
+        'ok' => true,
+        'response' => $ollamaResponse
+    ];
+}
+
 $action = $_POST['action'] ?? '';
 
 if($action === 'list'){
@@ -68,6 +137,37 @@ if($action === 'search'){
         $hits = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     echo json_encode(['ok'=>true,'hits'=>$hits]);
+    exit;
+}
+
+// Acción híbrida: pregunta asistida por Ollama usando contexto de la KB
+if($action === 'ai-search'){
+    $q = trim($_POST['q'] ?? '');
+    if($q === ''){
+        echo json_encode(['ok'=>false,'msg'=>'Pregunta requerida']);
+        exit;
+    }
+
+    // buscar hasta 5 artículos relevantes como contexto
+    $qL = mb_strtolower($q);
+    $stmt = $pdo->prepare("SELECT id, title, category, keywords, content, created_at FROM kb_articles WHERE
+            LOWER(title) LIKE ? OR LOWER(category) LIKE ? OR LOWER(keywords) LIKE ? OR LOWER(content) LIKE ?
+            ORDER BY created_at DESC LIMIT 5");
+    $searchTerm = '%' . $qL . '%';
+    $stmt->execute([$searchTerm, $searchTerm, $searchTerm, $searchTerm]);
+    $contextArticles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // construir prompt para Ollama
+    $prompt = "Respuesta a la siguiente pregunta basándote en el contexto proporcionado.\nPregunta: " . $q;
+
+    $ollamaResult = connectOllama($prompt, 'gemini-3-flash-preview:cloud', $contextArticles);
+    if(!$ollamaResult['ok']){
+        // fallback: devolver contextos sin respuesta generada
+        echo json_encode(['ok'=>false,'msg'=>$ollamaResult['msg'],'context'=>$contextArticles]);
+        exit;
+    }
+
+    echo json_encode(['ok'=>true,'response'=>$ollamaResult['response'],'context'=>$contextArticles]);
     exit;
 }
 
