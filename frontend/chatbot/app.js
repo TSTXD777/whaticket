@@ -5,7 +5,7 @@
 */
 
 // URL del endpoint PHP
-const apiUrl = '../backend/chatbot.php';
+const apiUrl = '../../backend/chatbot.php';
 
 // función auxiliar para hacer llamadas al backend
 async function api(action, data){
@@ -64,16 +64,23 @@ function appendChat(who, text){
   chatLog.scrollTop = chatLog.scrollHeight;
 }
 
-// Envío desde la caja de chat: se consulta al backend mediante 'search'
+// Envío desde la caja de chat: se consulta al backend mediante 'ai-search'
 chatSend.addEventListener('click', async ()=>{
   const q = chatInput.value.trim();
   if(!q) return;
   appendChat('user', q);
   chatInput.value = '';
-  // Simulación: buscar en KB por texto
-  const resp = await api('search', { q });
-  if(resp && resp.hits && resp.hits.length){
-    appendChat('bot', 'Encontré ' + resp.hits.length + ' resultado(s). Título: ' + resp.hits[0].title + '\n' + resp.hits[0].content.substring(0,200));
+  // Llamada al endpoint híbrido que usa Ollama
+  const resp = await api('ai-search', { q });
+  if(resp && resp.ok && resp.response){
+    appendChat('bot', resp.response);
+  } else if(resp && resp.context && resp.context.length){
+    // fallback: mostramos títulos de contexto
+    let msg = 'Lo siento, no pude generar respuesta. Contexto disponible:';
+    resp.context.forEach((a,i)=>{
+      msg += '\n' + (i+1) + '. ' + a.title;
+    });
+    appendChat('bot', msg);
   } else {
     appendChat('bot', 'Lo siento, no encontré una respuesta en la base de conocimiento.');
   }
