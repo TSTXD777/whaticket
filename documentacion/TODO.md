@@ -8,7 +8,7 @@ Además, vamos hacer los commits de ser posible cuando una cosa que hacer esté 
 Si hay bugs, dejar un comentario mencionando el problema "BUG: descripción del bug". "y si hay que asignarle algo a alguien, hacer la mención via "@usuario".
 
 - [ ] Abel @Abel52080
-- [ ] Stephany @stefanycarias
+- [X] Stephany @stefanycarias
 - [ ] César @Jona-giron25
 - [ ] Jeymi @JCarcamo06
 - [X] Hyrum @TSTXD777
