@@ -2,10 +2,15 @@
 // Database setup script for Whaticket
 // Run this once to create the database and tables
 
-$host = 'localhost';
-$dbname = 'whaticket';
-$username = 'root';
-$password = '';
+require __DIR__ . '/../vendor/autoload.php';
+
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
+$dotenv->load();
+
+$host = $_ENV['DB_HOST'];
+$dbname = $_ENV['DB_NAME'];
+$username = $_ENV['DB_USER'];
+$password = $_ENV['DB_PASSWORD'];
 
 try {
     // Connect to MySQL (without specifying database first)

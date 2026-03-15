@@ -1,19 +1,31 @@
-// Estadísticas globales
 let usuariosData = [];
 
-// Cargar tabla de usuarios
-async function cargarUsuarios() {
-    try {
-        let res = await fetch("../../backend/obtener_usuarios.php");
-        let usuarios = await res.json();
+function escapeHtml(texto) {
+    if (texto === null || texto === undefined) return "";
+    return String(texto)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
 
-        usuariosData = usuarios; // Guardar para estadísticas
+async function cargarUsuarios() {
+    const tabla = document.getElementById("tablaUsuarios");
+    if (!tabla) return;
+
+    try {
+        let res = await fetch("./backend/registrar.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ nombre, correo, password, rol })
+});
+        usuariosData = usuarios;
         actualizarEstadisticas(usuarios);
 
-        let tabla = document.getElementById("tablaUsuarios");
         tabla.innerHTML = "";
 
-        if (usuarios.length === 0) {
+        if (!Array.isArray(usuarios) || usuarios.length === 0) {
             tabla.innerHTML = `
                 <tr>
                     <td colspan="7" class="text-center py-4">
@@ -26,14 +38,16 @@ async function cargarUsuarios() {
         }
 
         usuarios.forEach((u) => {
-            const estadoTexto = u.activo ? "Activo" : "Inactivo";
-            const estadoClass = u.activo ? "status-activo" : "status-inactivo";
-            const rolTexto = u.rol.charAt(0).toUpperCase() + u.rol.slice(1);
-            const fechaRegistro = new Date(u.created_at).toLocaleDateString('es-ES');
+            const estadoTexto = Number(u.activo) === 1 ? "Activo" : "Inactivo";
+            const estadoClass = Number(u.activo) === 1 ? "status-activo" : "status-inactivo";
+            const rolTexto = u.rol ? u.rol.charAt(0).toUpperCase() + u.rol.slice(1) : "";
+            const fechaRegistro = u.created_at
+                ? new Date(u.created_at).toLocaleDateString('es-ES')
+                : "Sin fecha";
 
             tabla.innerHTML += `
                 <tr>
-                    <td><strong>${u.id}</strong></td>
+                    <td><strong>${escapeHtml(u.id)}</strong></td>
                     <td>
                         <div class="d-flex align-items-center">
                             <i class="bi bi-person-circle text-primary me-2"></i>
@@ -47,14 +61,14 @@ async function cargarUsuarios() {
                         </div>
                     </td>
                     <td>
-                        <span class="role-badge">${rolTexto}</span>
+                        <span class="role-badge">${escapeHtml(rolTexto)}</span>
                     </td>
                     <td>
                         <span class="badge ${estadoClass}">${estadoTexto}</span>
                     </td>
                     <td>
                         <small class="text-muted">
-                            <i class="bi bi-calendar me-1"></i>${fechaRegistro}
+                            <i class="bi bi-calendar me-1"></i>${escapeHtml(fechaRegistro)}
                         </small>
                     </td>
                     <td>
@@ -71,8 +85,6 @@ async function cargarUsuarios() {
             `;
         });
     } catch (error) {
-        console.error("Error al cargar usuarios:", error);
-        const tabla = document.getElementById("tablaUsuarios");
         tabla.innerHTML = `
             <tr>
                 <td colspan="7" class="text-center py-4">
@@ -84,14 +96,12 @@ async function cargarUsuarios() {
     }
 }
 
-// Actualizar estadísticas
 function actualizarEstadisticas(usuarios) {
     const totalUsers = usuarios.length;
-    const activeUsers = usuarios.filter(u => u.activo).length;
+    const activeUsers = usuarios.filter(u => Number(u.activo) === 1).length;
     const adminUsers = usuarios.filter(u => u.rol === 'admin').length;
     const technicianUsers = usuarios.filter(u => u.rol === 'tecnico').length;
 
-    // Actualizar contadores si existen
     const totalUsersEl = document.getElementById("totalUsers");
     const activeUsersEl = document.getElementById("activeUsers");
     const adminUsersEl = document.getElementById("adminUsers");
@@ -103,12 +113,10 @@ function actualizarEstadisticas(usuarios) {
     if (technicianUsersEl) technicianUsersEl.textContent = technicianUsers;
 }
 
-// Ir a editar.html con ID
 function editarUsuario(id) {
     window.location.href = `editar.html?id=${id}`;
 }
 
-// Desactivar usuario
 async function desactivarUsuario(id) {
     const usuario = usuariosData.find(u => u.id == id);
     if (!usuario) {
@@ -116,22 +124,23 @@ async function desactivarUsuario(id) {
         return;
     }
 
-    const accion = usuario.activo ? "desactivar" : "activar";
+    const accion = Number(usuario.activo) === 1 ? "desactivar" : "activar";
     const mensaje = `¿Seguro que desea ${accion} al usuario "${usuario.nombre}"?`;
 
     if (!confirm(mensaje)) return;
 
     try {
-        const res = await fetch("../../backend/desactivar.php", {
+        const res = await fetch("../backend/desactivar.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ id })
         });
 
         const data = await res.json();
+
         if (data.ok) {
             alert(data.mensaje);
-            cargarUsuarios(); // refrescar tabla
+            cargarUsuarios();
         } else {
             alert(data.mensaje || "Error al procesar la solicitud");
         }
@@ -140,22 +149,24 @@ async function desactivarUsuario(id) {
     }
 }
 
-// Manejar registro de usuario
 document.getElementById("formRegistro")?.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const submitBtn = e.target.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Registrando...';
-    submitBtn.disabled = true;
+    const alertDiv = document.getElementById("respuesta");
 
-    let nombre = document.getElementById("nombre").value;
-    let correo = document.getElementById("correo").value;
-    let password = document.getElementById("password").value;
+    submitBtn.innerHTML = 'Registrando...';
+    submitBtn.disabled = true;
+    alertDiv.style.display = "none";
+
+    let nombre = document.getElementById("nombre").value.trim();
+    let correo = document.getElementById("correo").value.trim();
+    let password = document.getElementById("password").value.trim();
     let rol = document.getElementById("rol").value;
 
     try {
-        let res = await fetch("../../backend/registrar.php", {
+        let res = await fetch("./backend/registrar.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ nombre, correo, password, rol })
@@ -163,18 +174,17 @@ document.getElementById("formRegistro")?.addEventListener("submit", async (e) =>
 
         let data = await res.json();
 
-        const alertDiv = document.getElementById("respuesta");
         if (data.ok) {
-            alertDiv.innerHTML = `<div class="alert alert-success"><i class="bi bi-check-circle me-2"></i>${data.mensaje}</div>`;
+            alertDiv.innerHTML = `<div class="alert alert-success">${data.mensaje}</div>`;
+            alertDiv.style.display = "block";
             document.getElementById("formRegistro").reset();
         } else {
-            alertDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>${data.mensaje}</div>`;
+            alertDiv.innerHTML = `<div class="alert alert-danger">${data.mensaje}</div>`;
+            alertDiv.style.display = "block";
         }
-        alertDiv.style.display = "block";
 
     } catch (error) {
-        const alertDiv = document.getElementById("respuesta");
-        alertDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>Error de conexión. Intente nuevamente.</div>`;
+        alertDiv.innerHTML = `<div class="alert alert-danger">Error de conexión</div>`;
         alertDiv.style.display = "block";
     }
 
@@ -182,5 +192,4 @@ document.getElementById("formRegistro")?.addEventListener("submit", async (e) =>
     submitBtn.disabled = false;
 });
 
-// Inicializar tabla
 cargarUsuarios();
