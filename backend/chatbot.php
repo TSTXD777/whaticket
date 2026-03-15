@@ -11,14 +11,20 @@
 
 header('Content-Type: application/json; charset=utf-8');
 
+// Load environment variables
+require_once __DIR__ . '/../vendor/autoload.php';
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
+$dotenv->load();
+
 // Database configuration
-$host = 'localhost';
-$dbname = 'whaticket';
-$username = 'root';
-$password = '';
+$host = $_ENV['DB_HOST'] ?? 'localhost';
+$dbname = $_ENV['DB_NAME'] ?? 'whaticket';
+$username = $_ENV['DB_USER'] ?? 'root';
+$password = $_ENV['DB_PASSWORD'] ?? '';
+$port = $_ENV['DB_PORT'] ?? 3306;
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
+    $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch(PDOException $e) {
     die(json_encode(['ok'=>false, 'msg'=>'Connection failed: ' . $e->getMessage()]));
@@ -29,7 +35,9 @@ function connectOllama($prompt, $model = 'gemini-3-flash-preview:cloud', $contex
     $ollamaUrl = 'http://localhost:11434/api/generate';
     
     // Construir mensaje del sistema con contexto de KB
-    $systemMsg = "Eres un asistente de soporte técnico. Responde de forma clara y concisa.";
+    $systemMsg = "Eres un asistente de soporte técnico de la plataforma Whaticket. Responde de forma clara, concisa y en texto pleno (sin formato markdown). 
+    Tu función es ayudar al usuario con información disponible en tu base de conocimiento. Si la consulta no se encuentra en tu base de conocimiento, solicita al usuario más detalles para comprender mejor su problema. 
+    Ten en cuenta lo siguiente (sin mencionarlo explícitamente al usuario): en caso de no contar con información suficiente, guía al usuario a crear un nuevo ticket de soporte o a solicitar a un técnico la creación de un nuevo artículo de conocimiento.";
     if (!empty($context)) {
         $contextText = "Contexto relevante de la base de conocimiento:\n";
         foreach ($context as $idx => $article) {
