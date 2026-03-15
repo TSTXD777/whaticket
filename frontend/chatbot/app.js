@@ -35,6 +35,9 @@ const chatLog = document.getElementById('chatLog');
 const chatInput = document.getElementById('chatInput');
 const chatSend = document.getElementById('chatSend');
 
+// Historial de conversación en esta sesión (se envía al backend para contexto)
+const chatHistory = [];
+
 // FAQs predeterminadas (simulan respuestas rápidas del bot)
 let faqs = [
   {q: '¿Cómo reinicio el servicio X?', a: 'Para reiniciar el servicio X ejecute: systemctl restart x.service'},
@@ -63,6 +66,13 @@ function appendChat(who, text){
   div.textContent = text;
   chatLog.appendChild(div);
   chatLog.scrollTop = chatLog.scrollHeight;
+
+  // Guardar en historial de sesión (solo user/bot)
+  if(who === 'user' || who === 'bot'){
+    chatHistory.push({ role: who, text });
+    // Limitar tamaño del historial para no enviar demasiado
+    if(chatHistory.length > 20) chatHistory.splice(0, chatHistory.length - 20);
+  }
 }
 
 // Envío desde la caja de chat: se consulta al backend mediante 'ai-search'
@@ -71,8 +81,8 @@ chatSend.addEventListener('click', async ()=>{
   if(!q) return;
   appendChat('user', q);
   chatInput.value = '';
-  // Llamada al endpoint híbrido que usa Ollama
-  const resp = await api('ai-search', { q });
+  // Llamada al endpoint híbrido que usa Ollama (incluye historial de la sesión)
+  const resp = await api('ai-search', { q, history: JSON.stringify(chatHistory) });
   if(resp && resp.ok && resp.response){
     appendChat('bot', resp.response);
   } else if(resp && resp.context && resp.context.length){

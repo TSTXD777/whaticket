@@ -31,7 +31,7 @@ try {
 }
 
 // Función auxiliar para conectar con Ollama
-function connectOllama($prompt, $model = 'gemini-3-flash-preview:cloud', $context = [], $temperature = 0.6, $maxTokens = 512) {
+function connectOllama($prompt, $model = 'gemini-3-flash-preview:cloud', $context = [], $temperature = 0.6, $maxTokens = 256) {
     $ollamaUrl = 'http://localhost:11434/api/generate';
     
     // Construir mensaje del sistema con contexto de KB
@@ -149,12 +149,21 @@ if($action === 'search'){
     exit;
 }
 
-// Acción híbrida: pregunta asistida por Ollama usando contexto de la KB
+// Acción híbrida: pregunta asistida por Ollama usando contexto de la KB (y memoria de sesión)
 if($action === 'ai-search'){
     $q = trim($_POST['q'] ?? '');
     if($q === ''){
         echo json_encode(['ok'=>false,'msg'=>'Pregunta requerida']);
         exit;
+    }
+
+    // Decodificar historial de la sesión (opcional)
+    $history = [];
+    if (!empty($_POST['history'])) {
+        $decoded = json_decode($_POST['history'], true);
+        if (is_array($decoded)) {
+            $history = $decoded;
+        }
     }
 
     // Parámetros ajustables para el LLM
@@ -174,8 +183,27 @@ if($action === 'ai-search'){
     $stmt->execute([$searchTerm, $searchTerm, $searchTerm, $searchTerm]);
     $contextArticles = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // Construir historial de conversación para el prompt (excluye la última pregunta si coincide con q)
+    $historyText = '';
+    if (!empty($history) && is_array($history)) {
+        $lastIndex = count($history) - 1;
+        if ($lastIndex >= 0 && isset($history[$lastIndex]['role'], $history[$lastIndex]['text']) &&
+            $history[$lastIndex]['role'] === 'user' && trim($history[$lastIndex]['text']) === $q) {
+            array_pop($history);
+        }
+        if (!empty($history)) {
+            $historyText = "Historial de la conversación:\n";
+            foreach ($history as $msg) {
+                if (!isset($msg['role'], $msg['text'])) continue;
+                $role = $msg['role'] === 'bot' ? 'Asistente' : 'Usuario';
+                $historyText .= "$role: " . trim($msg['text']) . "\n";
+            }
+            $historyText .= "\n";
+        }
+    }
+
     // construir prompt para Ollama
-    $prompt = "Respuesta a la siguiente pregunta basándote en el contexto proporcionado.\nPregunta: " . $q;
+    $prompt = $historyText . "Respuesta a la siguiente pregunta basándote en el contexto proporcionado.\nPregunta: " . $q;
 
     $ollamaResult = connectOllama($prompt, 'gemini-3-flash-preview:cloud', $contextArticles, $temperature, $maxTokens);
     if(!$ollamaResult['ok']){
