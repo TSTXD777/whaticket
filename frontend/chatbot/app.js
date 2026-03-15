@@ -184,16 +184,18 @@ articleForm.addEventListener('submit', async (e)=>{
   };
 
   try {
-    if(id) await api('update', payload);
-    else await api('add', payload);
-
-    // Close modal and reset form
-    const modal = bootstrap.Modal.getInstance(document.getElementById('articleModal'));
-    modal.hide();
-    articleForm.reset();
-    loadAll();
+    const resp = id ? await api('update', payload) : await api('add', payload);
+    if (resp && resp.ok) {
+      // Close modal and reset form
+      const modal = bootstrap.Modal.getInstance(document.getElementById('articleModal'));
+      modal.hide();
+      articleForm.reset();
+      loadAll();
+    } else {
+      alert('Error al guardar el artículo: ' + (resp.msg || 'Respuesta inválida'));
+    }
   } catch (error) {
-    alert('Error al guardar el artículo');
+    alert('Error de conexión: ' + error.message);
   }
 });
 
