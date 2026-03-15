@@ -59,6 +59,7 @@ function renderFaqs(){
 function appendChat(who, text){
   const div = document.createElement('div');
   div.className = 'chat-message ' + who;
+  div.style.whiteSpace = 'pre-wrap';
   div.textContent = text;
   chatLog.appendChild(div);
   chatLog.scrollTop = chatLog.scrollHeight;

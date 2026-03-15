@@ -31,7 +31,7 @@ try {
 }
 
 // Función auxiliar para conectar con Ollama
-function connectOllama($prompt, $model = 'gemini-3-flash-preview:cloud', $context = []) {
+function connectOllama($prompt, $model = 'gemini-3-flash-preview:cloud', $context = [], $temperature = 0.6, $maxTokens = 512) {
     $ollamaUrl = 'http://localhost:11434/api/generate';
     
     // Construir mensaje del sistema con contexto de KB
@@ -53,7 +53,8 @@ function connectOllama($prompt, $model = 'gemini-3-flash-preview:cloud', $contex
         'prompt' => $prompt,
         'system' => $systemMsg,
         'stream' => false,  // No usar streaming para simplificar respuesta
-        'temperature' => 0.7
+        'temperature' => $temperature,
+        'max_tokens' => $maxTokens
     ];
     
     // Realizar request a Ollama
@@ -61,7 +62,7 @@ function connectOllama($prompt, $model = 'gemini-3-flash-preview:cloud', $contex
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-    curl_setopt($ch, CURLOPT_TIMEOUT, 60);  // 60 segundos de timeout
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);  // 30 segundos de timeout
     
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -156,11 +157,19 @@ if($action === 'ai-search'){
         exit;
     }
 
-    // buscar hasta 5 artículos relevantes como contexto
+    // Parámetros ajustables para el LLM
+    $temperature = isset($_POST['temperature']) ? floatval($_POST['temperature']) : 0.7;
+    $temperature = max(0.0, min(1.0, $temperature));
+    $maxTokens = isset($_POST['max_tokens']) ? intval($_POST['max_tokens']) : 512;
+    $maxTokens = max(16, min(2048, $maxTokens));
+    $contextSize = isset($_POST['context_size']) ? intval($_POST['context_size']) : 5;
+    $contextSize = max(1, min(20, $contextSize));
+
+    // buscar artículos relevantes como contexto
     $qL = mb_strtolower($q);
     $stmt = $pdo->prepare("SELECT id, title, category, keywords, content, created_at FROM kb_articles WHERE
             LOWER(title) LIKE ? OR LOWER(category) LIKE ? OR LOWER(keywords) LIKE ? OR LOWER(content) LIKE ?
-            ORDER BY created_at DESC LIMIT 5");
+            ORDER BY created_at DESC LIMIT " . (int)$contextSize);
     $searchTerm = '%' . $qL . '%';
     $stmt->execute([$searchTerm, $searchTerm, $searchTerm, $searchTerm]);
     $contextArticles = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -168,7 +177,7 @@ if($action === 'ai-search'){
     // construir prompt para Ollama
     $prompt = "Respuesta a la siguiente pregunta basándote en el contexto proporcionado.\nPregunta: " . $q;
 
-    $ollamaResult = connectOllama($prompt, 'gemini-3-flash-preview:cloud', $contextArticles);
+    $ollamaResult = connectOllama($prompt, 'gemini-3-flash-preview:cloud', $contextArticles, $temperature, $maxTokens);
     if(!$ollamaResult['ok']){
         // fallback: devolver contextos sin respuesta generada
         echo json_encode(['ok'=>false,'msg'=>$ollamaResult['msg'],'context'=>$contextArticles]);
