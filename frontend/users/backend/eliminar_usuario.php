@@ -6,18 +6,15 @@ require_once "../config.php";
 $data = json_decode(file_get_contents("php://input"), true);
 
 $id = $data["id"];
-$nombre = $data["nombre"];
-$correo = $data["correo"];
-$rol = $data["rol"];
 
 try {
 
-$stmt = $pdo->prepare("UPDATE users SET nombre=?, correo=?, rol=? WHERE id=?");
-$stmt->execute([$nombre,$correo,$rol,$id]);
+$stmt = $pdo->prepare("DELETE FROM users WHERE id=?");
+$stmt->execute([$id]);
 
 echo json_encode([
 "ok"=>true,
-"mensaje"=>"Usuario actualizado correctamente"
+"mensaje"=>"Usuario eliminado"
 ]);
 
 } catch(PDOException $e){

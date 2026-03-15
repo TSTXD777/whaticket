@@ -8,7 +8,7 @@ Además, vamos hacer los commits de ser posible cuando una cosa que hacer esté 
 Si hay bugs, dejar un comentario mencionando el problema "BUG: descripción del bug". "y si hay que asignarle algo a alguien, hacer la mención via "@usuario".
 
 - [X] Abel @Abel52080
-- [ ] Stephany @stefanycarias
+- [X] Stephany @stefanycarias
 - [ ] César @Jona-giron25
 - [X] Jeymi @JCarcamo06
 - [X] Hyrum @TSTXD777
@@ -23,10 +23,10 @@ Si hay bugs, dejar un comentario mencionando el problema "BUG: descripción del 
 - [ ] Conectar a la base de datos. (Todos dependemos de esto) @Abel52080
 
 ## Usuarios
-- [ ] Arreglar iniciar sesión. @stefanycarias
-- [ ] Arreglar Registrar Usuario. @stefanycarias
-- [ ] Validación de Usuario y contraseña. @stefanycarias
-- [ ] Mostrar correctamente los usuarios en usuarios.html. @stefanycarias
+- [X] Arreglar iniciar sesión. @stefanycarias
+- [X] Arreglar Registrar Usuario. @stefanycarias
+- [X] Validación de Usuario y contraseña. @stefanycarias
+- [X] Mostrar correctamente los usuarios en usuarios.html. @stefanycarias
 
 ## Tickets
 - [ ] Arreglar Backend en "Gestion de Tickets" @Jona-giron25

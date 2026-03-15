@@ -1,169 +1,183 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Iniciar Sesión - Whaticket</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
-        body {
-            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #60a5fa 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        .login-card {
-            max-width: 400px;
-            width: 100%;
-            background: rgba(255,255,255,0.95);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            backdrop-filter: blur(10px);
-        }
-        .card-header {
-            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-            color: white;
-            border-radius: 20px 20px 0 0 !important;
-            border: none;
-        }
-        .btn-custom {
-            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-            border: none;
-            border-radius: 25px;
-            padding: 12px;
-            color: white;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        .btn-custom:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(30, 58, 138, 0.3);
-            color: white;
-        }
-        .form-control:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
-        }
-        .input-group-text {
-            background: #f8f9fa;
-            border-color: #dee2e6;
-        }
-    </style>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Iniciar Sesión - Whaticket</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+
+body{
+background: linear-gradient(135deg,#1e3a8a,#3b82f6,#60a5fa);
+height:100vh;
+display:flex;
+align-items:center;
+justify-content:center;
+font-family:Segoe UI;
+}
+
+.card-login{
+width:420px;
+border-radius:20px;
+box-shadow:0 20px 40px rgba(0,0,0,0.2);
+}
+
+</style>
+
 </head>
+
 <body>
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-6 col-lg-5">
-                <div class="login-card">
-                    <div class="card-header text-center py-4">
-                        <h4 class="mb-0">
-                            <i class="bi bi-shield-lock me-2"></i>
-                            Iniciar Sesión
-                        </h4>
-                        <p class="mb-0 small opacity-75">Sistema de Gestión Whaticket</p>
-                    </div>
-                    <div class="card-body p-4">
-                        <form id="formLogin">
-                            <div class="mb-3">
-                                <label for="correo" class="form-label">
-                                    <i class="bi bi-envelope me-1"></i>Correo electrónico
-                                </label>
-                                <input type="email" id="correo" class="form-control form-control-lg"
-                                       placeholder="ejemplo@gmail.com" required>
-                            </div>
 
-                            <div class="mb-3">
-                                <label for="password" class="form-label">
-                                    <i class="bi bi-lock me-1"></i>Contraseña
-                                </label>
-                                <input type="password" id="password" class="form-control form-control-lg"
-                                       placeholder="Ingrese su contraseña" required>
-                            </div>
+<div class="card card-login">
 
-                            <div class="mb-4">
-                                <label for="rol" class="form-label">
-                                    <i class="bi bi-person-badge me-1"></i>Rol del sistema
-                                </label>
-                                <select id="rol" class="form-select form-select-lg" required>
-                                    <option value="" disabled selected>Seleccione un rol</option>
-                                    <option value="admin">Administrador</option>
-                                    <option value="tecnico">Técnico</option>
-                                    <option value="usuario">Usuario Final</option>
-                                </select>
-                            </div>
+<div class="card-header text-center bg-primary text-white">
 
-                            <button type="submit" class="btn btn-custom w-100 btn-lg">
-                                <i class="bi bi-box-arrow-in-right me-2"></i>Iniciar Sesión
-                            </button>
-                        </form>
+<h4>Iniciar Sesión</h4>
+<p class="mb-0">Sistema Whaticket</p>
 
-                        <div id="respuesta" class="alert alert-danger mt-3" style="display: none;"></div>
+</div>
 
-                        <hr class="my-4">
+<div class="card-body">
 
-                        <div class="text-center">
-                            <a href="index.html" class="btn btn-outline-secondary">
-                                <i class="bi bi-person-plus me-1"></i>Registrarse
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+<form id="formLogin">
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-    document.getElementById("formLogin").addEventListener("submit", async(e)=>{
-        e.preventDefault();
+<div class="mb-3">
 
-        const submitBtn = e.target.querySelector('button[type="submit"]');
-        const originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Cargando...';
-        submitBtn.disabled = true;
+<label>Correo</label>
 
-        const correo = document.getElementById("correo").value;
-        const password = document.getElementById("password").value;
-        const rol = document.getElementById("rol").value;
+<input
+type="email"
+class="form-control"
+id="correo"
+required
+>
 
-        try {
-            let res = await fetch("../../backend/login.php", {
-                method:"POST",
-                headers:{ "Content-Type":"application/json" },
-                body:JSON.stringify({correo, password, rol})
-            });
+</div>
 
-            let data = await res.json();
+<div class="mb-3">
 
-            if(data.ok){
-                document.getElementById("respuesta").style.display = "none";
-                // Success animation
-                document.querySelector(".login-card").style.transform = "scale(0.95)";
-                document.querySelector(".login-card").style.opacity = "0.8";
+<label>Contraseña</label>
 
-                setTimeout(()=> {
-                    window.location.href = "../index.html";
-                }, 300);
+<input
+type="password"
+class="form-control"
+id="password"
+required
+>
 
-            } else {
-                const alertDiv = document.getElementById("respuesta");
-                alertDiv.textContent = data.mensaje;
-                alertDiv.style.display = "block";
-                alertDiv.className = "alert alert-danger mt-3";
-            }
-        } catch (error) {
-            const alertDiv = document.getElementById("respuesta");
-            alertDiv.textContent = "Error de conexión. Intente nuevamente.";
-            alertDiv.style.display = "block";
-            alertDiv.className = "alert alert-danger mt-3";
-        }
+</div>
 
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-    });
-    </script>
+<div class="mb-3">
+
+<label>Rol</label>
+
+<select
+class="form-control"
+id="rol"
+required
+>
+
+<option value="">Seleccione</option>
+<option value="admin">Administrador</option>
+<option value="tecnico">Técnico</option>
+<option value="usuario">Usuario</option>
+
+</select>
+
+</div>
+
+<button
+type="submit"
+class="btn btn-primary w-100"
+>
+
+Iniciar sesión
+
+</button>
+
+</form>
+
+<div
+id="respuesta"
+class="alert mt-3"
+style="display:none"
+></div>
+
+</div>
+
+</div>
+
+<script>
+
+document.getElementById("formLogin").addEventListener("submit", async (e)=>{
+
+e.preventDefault()
+
+const correo=document.getElementById("correo").value
+const password=document.getElementById("password").value
+const rol=document.getElementById("rol").value
+
+const respuesta=document.getElementById("respuesta")
+
+try{
+
+let res=await fetch("../../backend/login.php",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+correo,
+password,
+rol
+})
+
+})
+
+let data=await res.json()
+
+if(data.ok){
+
+if(data.rol==="admin"){
+window.location.href="../admin/index.html"
+}
+
+else if(data.rol==="tecnico"){
+window.location.href="../tecnico/index.html"
+}
+
+else{
+window.location.href="../usuario/index.html"
+}
+
+}
+
+else{
+
+respuesta.style.display="block"
+respuesta.className="alert alert-danger"
+respuesta.textContent=data.mensaje
+
+}
+
+}catch(error){
+
+respuesta.style.display="block"
+respuesta.className="alert alert-danger"
+respuesta.textContent="Error de conexión con el servidor"
+
+}
+
+})
+
+</script>
+
 </body>
 </html>
