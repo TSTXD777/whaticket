@@ -222,6 +222,19 @@ showAllBtn.onclick = loadAll;
 // Util
 function escapeHtml(s){ if(!s) return ''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+// Cargar mensaje de bienvenida configurado en el módulo de administración
+async function loadChatbotWelcomeMessage(){
+  try {
+    const res = await fetch('../../backend/config.php');
+    const cfg = await res.json();
+    const msg = cfg && cfg.ok && cfg.mensaje ? cfg.mensaje : '¡Hola! Soy tu asistente de soporte. Escribe tu pregunta o selecciona una FAQ para comenzar.';
+    appendChat('bot', msg);
+  } catch (err) {
+    appendChat('bot', '¡Hola! Soy tu asistente de soporte. Escribe tu pregunta o selecciona una FAQ para comenzar.');
+  }
+}
+
 // Inicializacion
 renderFaqs();
+loadChatbotWelcomeMessage();
 loadAll();
