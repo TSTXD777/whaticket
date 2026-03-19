@@ -2,14 +2,38 @@
 // backend/tickets.php
 header("Content-Type: application/json; charset=UTF-8");
 
-// Database configuration
-$host = 'localhost';
-$dbname = 'whaticket';
-$username = 'root';
-$password = '';
+/*
+---------------------------------------------------------
+CARGAR VARIABLES DE ENTORNO
+---------------------------------------------------------
+Se cargan las credenciales de la base de datos desde
+el archivo .env usando la librería phpdotenv.
+*/
+
+require __DIR__ . '/../vendor/autoload.php';
+
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
+$dotenv->load();
+
+/*
+---------------------------------------------------------
+CONFIGURACIÓN DE BASE DE DATOS
+---------------------------------------------------------
+Las credenciales se obtienen desde el archivo .env
+*/
+
+$host = $_ENV['DB_HOST'];
+$dbname = $_ENV['DB_NAME'];
+$username = $_ENV['DB_USER'];
+$password = $_ENV['DB_PASSWORD'];
+$port = $_ENV['DB_PORT'];
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
+    $pdo = new PDO(
+    "mysql:host=$host;dbname=$dbname;port=$port;charset=utf8",
+    $username,
+    $password
+);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch(PDOException $e) {
     die(json_encode(["error" => "Connection failed: " . $e->getMessage()]));
@@ -114,6 +138,35 @@ switch ($act) {
         $stmt->execute([json_encode($comentarios), $id]);
 
         echo json_encode(["ok" => true]);
+        break;
+
+    /*
+    ---------------------------------------------------------
+    ESTADÍSTICAS DE TICKETS
+    ---------------------------------------------------------
+*/
+    case 'stats':
+
+        // Contar el total de tickets registrados
+        $total = $pdo->query("SELECT COUNT(*) FROM tickets")->fetchColumn();
+
+        // Contar tickets con estado "Pendiente"
+        $pendientes = $pdo->query("SELECT COUNT(*) FROM tickets WHERE estado='Pendiente'")->fetchColumn();
+
+        // Contar tickets con estado "Resuelto"
+        $resueltos = $pdo->query("SELECT COUNT(*) FROM tickets WHERE estado='Resuelto'")->fetchColumn();
+
+        // Contar tickets con estado "En proceso"
+        $en_proceso = $pdo->query("SELECT COUNT(*) FROM tickets WHERE estado='En proceso'")->fetchColumn();
+
+        // Retornar los datos en formato JSON para el frontend
+        echo json_encode([
+            "total" => (int)$total,
+            "pendientes" => (int)$pendientes,
+            "resueltos" => (int)$resueltos,
+            "en_proceso" => (int)$en_proceso
+        ]);
+
         break;
 
     default:

@@ -5,7 +5,7 @@
 */
 
 // URL del endpoint PHP
-const apiUrl = '../backend/chatbot.php';
+const apiUrl = '../../backend/chatbot.php';
 
 // función auxiliar para hacer llamadas al backend
 async function api(action, data){
@@ -35,6 +35,9 @@ const chatLog = document.getElementById('chatLog');
 const chatInput = document.getElementById('chatInput');
 const chatSend = document.getElementById('chatSend');
 
+// Historial de conversación en esta sesión (se envía al backend para contexto)
+const chatHistory = [];
+
 // FAQs predeterminadas (simulan respuestas rápidas del bot)
 let faqs = [
   {q: '¿Cómo reinicio el servicio X?', a: 'Para reiniciar el servicio X ejecute: systemctl restart x.service'},
@@ -59,21 +62,36 @@ function renderFaqs(){
 function appendChat(who, text){
   const div = document.createElement('div');
   div.className = 'chat-message ' + who;
+  div.style.whiteSpace = 'pre-wrap';
   div.textContent = text;
   chatLog.appendChild(div);
   chatLog.scrollTop = chatLog.scrollHeight;
+
+  // Guardar en historial de sesión (solo user/bot)
+  if(who === 'user' || who === 'bot'){
+    chatHistory.push({ role: who, text });
+    // Limitar tamaño del historial para no enviar demasiado
+    if(chatHistory.length > 20) chatHistory.splice(0, chatHistory.length - 20);
+  }
 }
 
-// Envío desde la caja de chat: se consulta al backend mediante 'search'
+// Envío desde la caja de chat: se consulta al backend mediante 'ai-search'
 chatSend.addEventListener('click', async ()=>{
   const q = chatInput.value.trim();
   if(!q) return;
   appendChat('user', q);
   chatInput.value = '';
-  // Simulación: buscar en KB por texto
-  const resp = await api('search', { q });
-  if(resp && resp.hits && resp.hits.length){
-    appendChat('bot', 'Encontré ' + resp.hits.length + ' resultado(s). Título: ' + resp.hits[0].title + '\n' + resp.hits[0].content.substring(0,200));
+  // Llamada al endpoint híbrido que usa Ollama (incluye historial de la sesión)
+  const resp = await api('ai-search', { q, history: JSON.stringify(chatHistory) });
+  if(resp && resp.ok && resp.response){
+    appendChat('bot', resp.response);
+  } else if(resp && resp.context && resp.context.length){
+    // fallback: mostramos títulos de contexto
+    let msg = 'Lo siento, no pude generar respuesta. Contexto disponible:';
+    resp.context.forEach((a,i)=>{
+      msg += '\n' + (i+1) + '. ' + a.title;
+    });
+    appendChat('bot', msg);
   } else {
     appendChat('bot', 'Lo siento, no encontré una respuesta en la base de conocimiento.');
   }
@@ -177,16 +195,18 @@ articleForm.addEventListener('submit', async (e)=>{
   };
 
   try {
-    if(id) await api('update', payload);
-    else await api('add', payload);
-
-    // Close modal and reset form
-    const modal = bootstrap.Modal.getInstance(document.getElementById('articleModal'));
-    modal.hide();
-    articleForm.reset();
-    loadAll();
+    const resp = id ? await api('update', payload) : await api('add', payload);
+    if (resp && resp.ok) {
+      // Close modal and reset form
+      const modal = bootstrap.Modal.getInstance(document.getElementById('articleModal'));
+      modal.hide();
+      articleForm.reset();
+      loadAll();
+    } else {
+      alert('Error al guardar el artículo: ' + (resp.msg || 'Respuesta inválida'));
+    }
   } catch (error) {
-    alert('Error al guardar el artículo');
+    alert('Error de conexión: ' + error.message);
   }
 });
 
@@ -202,6 +222,19 @@ showAllBtn.onclick = loadAll;
 // Util
 function escapeHtml(s){ if(!s) return ''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+// Cargar mensaje de bienvenida configurado en el módulo de administración
+async function loadChatbotWelcomeMessage(){
+  try {
+    const res = await fetch('../../backend/config.php');
+    const cfg = await res.json();
+    const msg = cfg && cfg.ok && cfg.mensaje ? cfg.mensaje : '¡Hola! Soy tu asistente de soporte. Escribe tu pregunta o selecciona una FAQ para comenzar.';
+    appendChat('bot', msg);
+  } catch (err) {
+    appendChat('bot', '¡Hola! Soy tu asistente de soporte. Escribe tu pregunta o selecciona una FAQ para comenzar.');
+  }
+}
+
 // Inicializacion
 renderFaqs();
+loadChatbotWelcomeMessage();
 loadAll();

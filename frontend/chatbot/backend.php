@@ -10,46 +10,93 @@
 // - delete  : elimina un artículo por id
 
 header('Content-Type: application/json; charset=utf-8');
-$DATA_FILE = __DIR__ . '/data.json';
+///NUEVO CÓDIGO PARA BASE DE DATOS EN MYSQL
+require __DIR__ . '/../../vendor/autoload.php';
 
-// Inicializar archivo si no existe
-if(!file_exists($DATA_FILE)){
-    file_put_contents($DATA_FILE, json_encode(["items" => []], JSON_PRETTY_PRINT));
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../../');
+$dotenv->load();
+
+$servername = $_ENV['DB_HOST'];
+$username = $_ENV['DB_USER'];
+$password = $_ENV['DB_PASSWORD'];
+$dbname = $_ENV['DB_NAME'];
+$dbport = $_ENV['DB_PORT'];
+
+// crear conexion
+$conn = new mysqli($servername, $username, $password, $dbname, $dbport);
+
+if ($conn->connect_error) {
+    die("Conexión fallida: " . $conn->connect_error);
 }
 
-// Lectura y escritura helpers
-function read_data(){ global $DATA_FILE; $s = file_get_contents($DATA_FILE); return json_decode($s, true); }
-function write_data($obj){ global $DATA_FILE; file_put_contents($DATA_FILE, json_encode($obj, JSON_PRETTY_PRINT)); }
+// Verificar si la tabla 'articles' existe
+$query = "SHOW TABLES LIKE 'kb_articles'";
+$result = $conn->query($query);
+if ($result->num_rows == 0) {
+    // Crear tabla
+    $createTable = "CREATE TABLE kb_articles (
+        id INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+        title VARCHAR(500) NOT NULL,
+        category VARCHAR(255),
+        keywords TEXT,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )";
+    if ($conn->query($createTable) === TRUE) {
+        echo "Tabla 'kb_articles' creada exitosamente.\n";
+    } else {
+        echo "Error creando tabla: " . $conn->error . "\n";
+    }
+} else {
+    echo "La tabla 'kb_articles' ya existe.\n";
+}
 
+//acción de la petición
 $action = $_POST['action'] ?? '';
 
 if($action === 'list'){
-    $d = read_data();
-    echo json_encode(['ok'=>true, 'data' => $d['items']]);
+    $result = $conn->query("SELECT * FROM kb_articles ORDER BY created_at DESC");
+    $data = [];
+    while($row = $result->fetch_assoc()){
+        $data[] = $row;
+    }
+    echo json_encode(['ok'=>true, 'data'=>$data]);
     exit;
 }
 
 if($action === 'get'){
     $id = $_POST['id'] ?? '';
-    $d = read_data();
-    foreach($d['items'] as $it) if($it['id']==$id){ echo json_encode(['ok'=>true,'item'=>$it]); exit; }
-    echo json_encode(['ok'=>false,'msg'=>'No encontrado']); exit;
+    $stmt = $conn->prepare("SELECT * FROM kb_articles WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if($row = $result->fetch_assoc()){
+        echo json_encode(['ok'=>true, 'item'=>$row]);
+    } else {
+        echo json_encode(['ok'=>false, 'msg'=>'No encontrado']);
+    }
+    $stmt->close();
+    exit;
 }
 
-if($action === 'search'){
+if($action === 'search' || $action === 'ai-search'){
     $q = trim($_POST['q'] ?? '');
-    $d = read_data();
-    $hits = [];
     if($q === ''){
-        $hits = $d['items'];
+        $result = $conn->query("SELECT * FROM kb_articles ORDER BY created_at DESC");
     } else {
-        $qL = mb_strtolower($q);
-        foreach($d['items'] as $it){
-            $hay = mb_strtolower($it['title'].' '.$it['category'].' '.($it['keywords']??'').' '.$it['content']);
-            if(mb_strpos($hay, $qL) !== false) $hits[] = $it;
-        }
+        $stmt = $conn->prepare("SELECT * FROM kb_articles WHERE title LIKE ? OR category LIKE ? OR keywords LIKE ? OR content LIKE ?");
+        $like = "%$q%";
+        $stmt->bind_param("ssss", $like, $like, $like, $like);
+        $stmt->execute();
+        $result = $stmt->get_result();
     }
-    echo json_encode(['ok'=>true,'hits'=>$hits]); exit;
+    $hits = [];
+    while($row = $result->fetch_assoc()){
+        $hits[] = $row;
+    }
+    echo json_encode(['ok'=>true, 'hits'=>$hits]);
+    exit;
 }
 
 if($action === 'add'){
@@ -57,42 +104,46 @@ if($action === 'add'){
     $category = $_POST['category'] ?? '';
     $keywords = $_POST['keywords'] ?? '';
     $content = $_POST['content'] ?? '';
-    $d = read_data();
-    // generar id simple
-    $id = uniqid();
-    $item = ['id'=>$id,'title'=>$title,'category'=>$category,'keywords'=>$keywords,'content'=>$content];
-    $d['items'][] = $item;
-    write_data($d);
-    echo json_encode(['ok'=>true,'item'=>$item]); exit;
+    $stmt = $conn->prepare("INSERT INTO kb_articles (title, category, keywords, content) VALUES (?, ?, ?, ?)");
+    $stmt->bind_param("ssss", $title, $category, $keywords, $content);
+    if($stmt->execute()){
+        $id = $conn->insert_id;
+        echo json_encode(['ok'=>true, 'item'=>['id'=>$id, 'title'=>$title, 'category'=>$category, 'keywords'=>$keywords, 'content'=>$content]]);
+    } else {
+        echo json_encode(['ok'=>false, 'msg'=>'Error inserting']);
+    }
+    $stmt->close();
+    exit;
 }
 
 if($action === 'update'){
     $id = $_POST['id'] ?? '';
-    $d = read_data();
-    foreach($d['items'] as &$it){
-        if($it['id'] === $id){
-            $it['title'] = $_POST['title'] ?? $it['title'];
-            $it['category'] = $_POST['category'] ?? $it['category'];
-            $it['keywords'] = $_POST['keywords'] ?? $it['keywords'];
-            $it['content'] = $_POST['content'] ?? $it['content'];
-            write_data($d);
-            echo json_encode(['ok'=>true,'item'=>$it]); exit;
-        }
+    $title = $_POST['title'] ?? '';
+    $category = $_POST['category'] ?? '';
+    $keywords = $_POST['keywords'] ?? '';
+    $content = $_POST['content'] ?? '';
+    $stmt = $conn->prepare("UPDATE kb_articles SET title = ?, category = ?, keywords = ?, content = ? WHERE id = ?");
+    $stmt->bind_param("ssssi", $title, $category, $keywords, $content, $id);
+    if($stmt->execute() && $stmt->affected_rows > 0){
+        echo json_encode(['ok'=>true, 'item'=>['id'=>$id, 'title'=>$title, 'category'=>$category, 'keywords'=>$keywords, 'content'=>$content]]);
+    } else {
+        echo json_encode(['ok'=>false, 'msg'=>'No encontrado para actualizar']);
     }
-    echo json_encode(['ok'=>false,'msg'=>'No encontrado para actualizar']); exit;
+    $stmt->close();
+    exit;
 }
 
 if($action === 'delete'){
     $id = $_POST['id'] ?? '';
-    $d = read_data();
-    $found = false;
-    foreach($d['items'] as $k => $it){
-        if($it['id'] == $id){ unset($d['items'][$k]); $found = true; break; }
-    }
-    $d['items'] = array_values($d['items']);
-    write_data($d);
-    echo json_encode(['ok'=>$found]); exit;
+    $stmt = $conn->prepare("DELETE FROM kb_articles WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $found = $stmt->affected_rows > 0;
+    echo json_encode(['ok'=>$found]);
+    $stmt->close();
+    exit;
 }
 
-// Acción inválida
 echo json_encode(['ok'=>false,'msg'=>'Acción inválida']);
+
+$conn->close();

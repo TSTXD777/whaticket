@@ -11,17 +11,95 @@
 
 header('Content-Type: application/json; charset=utf-8');
 
+// Load environment variables
+require_once __DIR__ . '/../vendor/autoload.php';
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
+$dotenv->load();
+
 // Database configuration
-$host = 'localhost';
-$dbname = 'whaticket';
-$username = 'root';
-$password = '';
+$host = $_ENV['DB_HOST'] ?? 'localhost';
+$dbname = $_ENV['DB_NAME'] ?? 'whaticket';
+$username = $_ENV['DB_USER'] ?? 'root';
+$password = $_ENV['DB_PASSWORD'] ?? '';
+$port = $_ENV['DB_PORT'] ?? 3306;
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
+    $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch(PDOException $e) {
     die(json_encode(['ok'=>false, 'msg'=>'Connection failed: ' . $e->getMessage()]));
+}
+
+// Función auxiliar para conectar con Ollama
+function connectOllama($prompt, $model = 'gemini-3-flash-preview:cloud', $context = [], $temperature = 0.6, $maxTokens = 256) {
+    $ollamaUrl = 'http://localhost:11434/api/generate';
+    
+    // Construir mensaje del sistema con contexto de KB
+    $systemMsg = "Eres un asistente de soporte técnico de la plataforma Whaticket. Responde de forma clara, concisa y en texto pleno (sin formato markdown). 
+    Tu función es ayudar al usuario con información disponible en tu base de conocimiento. Si la consulta no se encuentra en tu base de conocimiento, solicita al usuario más detalles para comprender mejor su problema. 
+    Ten en cuenta lo siguiente (sin mencionarlo explícitamente al usuario): en caso de no contar con información suficiente, guía al usuario a crear un nuevo ticket de soporte o a solicitar a un técnico la creación de un nuevo artículo de conocimiento.";
+    if (!empty($context)) {
+        $contextText = "Contexto relevante de la base de conocimiento:\n";
+        foreach ($context as $idx => $article) {
+            $contextText .= "\n[" . ($idx + 1) . "] " . $article['title'] . "\n";
+            $contextText .= substr($article['content'], 0, 500) . "...\n";
+        }
+        $systemMsg .= "\n\n" . $contextText;
+    }
+    
+    // Preparar payload para Ollama
+    $payload = [
+        'model' => $model,
+        'prompt' => $prompt,
+        'system' => $systemMsg,
+        'stream' => false,  // No usar streaming para simplificar respuesta
+        'temperature' => $temperature,
+        'max_tokens' => $maxTokens
+    ];
+    
+    // Realizar request a Ollama
+    $ch = curl_init($ollamaUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);  // 30 segundos de timeout
+    
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+    
+    // Manejo de errores
+    if ($curlError) {
+        return [
+            'ok' => false,
+            'msg' => 'Error de conexión con Ollama: ' . $curlError
+        ];
+    }
+    
+    if ($httpCode !== 200) {
+        return [
+            'ok' => false,
+            'msg' => 'Ollama respondió con código: ' . $httpCode
+        ];
+    }
+    
+    // Parsear respuesta
+    $decoded = json_decode($response, true);
+    if (!$decoded || !isset($decoded['response'])) {
+        return [
+            'ok' => false,
+            'msg' => 'Respuesta inválida de Ollama'
+        ];
+    }
+    
+    // Limpiar respuesta (Ollama puede incluir caracteres especiales)
+    $ollamaResponse = trim($decoded['response']);
+    
+    return [
+        'ok' => true,
+        'response' => $ollamaResponse
+    ];
 }
 
 $action = $_POST['action'] ?? '';
@@ -68,6 +146,73 @@ if($action === 'search'){
         $hits = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     echo json_encode(['ok'=>true,'hits'=>$hits]);
+    exit;
+}
+
+// Acción híbrida: pregunta asistida por Ollama usando contexto de la KB (y memoria de sesión)
+if($action === 'ai-search'){
+    $q = trim($_POST['q'] ?? '');
+    if($q === ''){
+        echo json_encode(['ok'=>false,'msg'=>'Pregunta requerida']);
+        exit;
+    }
+
+    // Decodificar historial de la sesión (opcional)
+    $history = [];
+    if (!empty($_POST['history'])) {
+        $decoded = json_decode($_POST['history'], true);
+        if (is_array($decoded)) {
+            $history = $decoded;
+        }
+    }
+
+    // Parámetros ajustables para el LLM
+    $temperature = isset($_POST['temperature']) ? floatval($_POST['temperature']) : 0.7;
+    $temperature = max(0.0, min(1.0, $temperature));
+    $maxTokens = isset($_POST['max_tokens']) ? intval($_POST['max_tokens']) : 512;
+    $maxTokens = max(16, min(2048, $maxTokens));
+    $contextSize = isset($_POST['context_size']) ? intval($_POST['context_size']) : 5;
+    $contextSize = max(1, min(20, $contextSize));
+
+    // buscar artículos relevantes como contexto
+    $qL = mb_strtolower($q);
+    $stmt = $pdo->prepare("SELECT id, title, category, keywords, content, created_at FROM kb_articles WHERE
+            LOWER(title) LIKE ? OR LOWER(category) LIKE ? OR LOWER(keywords) LIKE ? OR LOWER(content) LIKE ?
+            ORDER BY created_at DESC LIMIT " . (int)$contextSize);
+    $searchTerm = '%' . $qL . '%';
+    $stmt->execute([$searchTerm, $searchTerm, $searchTerm, $searchTerm]);
+    $contextArticles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Construir historial de conversación para el prompt (excluye la última pregunta si coincide con q)
+    $historyText = '';
+    if (!empty($history) && is_array($history)) {
+        $lastIndex = count($history) - 1;
+        if ($lastIndex >= 0 && isset($history[$lastIndex]['role'], $history[$lastIndex]['text']) &&
+            $history[$lastIndex]['role'] === 'user' && trim($history[$lastIndex]['text']) === $q) {
+            array_pop($history);
+        }
+        if (!empty($history)) {
+            $historyText = "Historial de la conversación:\n";
+            foreach ($history as $msg) {
+                if (!isset($msg['role'], $msg['text'])) continue;
+                $role = $msg['role'] === 'bot' ? 'Asistente' : 'Usuario';
+                $historyText .= "$role: " . trim($msg['text']) . "\n";
+            }
+            $historyText .= "\n";
+        }
+    }
+
+    // construir prompt para Ollama
+    $prompt = $historyText . "Respuesta a la siguiente pregunta basándote en el contexto proporcionado.\nPregunta: " . $q;
+
+    $ollamaResult = connectOllama($prompt, 'gemini-3-flash-preview:cloud', $contextArticles, $temperature, $maxTokens);
+    if(!$ollamaResult['ok']){
+        // fallback: devolver contextos sin respuesta generada
+        echo json_encode(['ok'=>false,'msg'=>$ollamaResult['msg'],'context'=>$contextArticles]);
+        exit;
+    }
+
+    echo json_encode(['ok'=>true,'response'=>$ollamaResult['response'],'context'=>$contextArticles]);
     exit;
 }
 
