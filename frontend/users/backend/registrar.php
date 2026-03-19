@@ -1,10 +1,19 @@
 <?php
 header("Content-Type: application/json; charset=UTF-8");
 
-require_once "../../config.php";
+require_once __DIR__ . '/../../../vendor/autoload.php';
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../../../');
+$dotenv->load();
+
+$host = $_ENV['DB_HOST'] ?? 'localhost';
+$dbname = $_ENV['DB_NAME'] ?? 'whaticket';
+$username = $_ENV['DB_USER'] ?? 'root';
+$password = $_ENV['DB_PASSWORD'] ?? '';
+$port = $_ENV['DB_PORT'] ?? 3306;
+
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
+    $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
     echo json_encode([

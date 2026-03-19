@@ -1,7 +1,14 @@
 <?php
 header("Content-Type: application/json; charset=UTF-8");
 
-require_once "../config.php";
+$env = parse_ini_file(__DIR__ . '/../.env');
+
+$host = $env['DB_HOST'];
+$dbname = $env['DB_NAME'];
+$username = $env['DB_USER'];
+$password = $env['DB_PASSWORD'];
+$port = $env['DB_PORT'];
+
 
 $data = json_decode(file_get_contents("php://input"), true);
 

@@ -7,13 +7,15 @@ header("Content-Type: application/json; charset=UTF-8");
 Cargar variables del .env
 */
 
-$env = parse_ini_file(__DIR__ . '/../.env');
+require_once __DIR__ . '/../../../vendor/autoload.php';
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../../../');
+$dotenv->load();
 
-$host = $env['DB_HOST'];
-$dbname = $env['DB_NAME'];
-$username = $env['DB_USER'];
-$password = $env['DB_PASSWORD'];
-$port = $env['DB_PORT'];
+$host = $_ENV['DB_HOST'] ?? 'localhost';
+$dbname = $_ENV['DB_NAME'] ?? 'whaticket';
+$username = $_ENV['DB_USER'] ?? 'root';
+$password = $_ENV['DB_PASSWORD'] ?? '';
+$port = $_ENV['DB_PORT'] ?? 3306;
 
 /*
 Conexión a la base de datos
