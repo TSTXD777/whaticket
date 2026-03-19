@@ -46,3 +46,11 @@ Si hay bugs, dejar un comentario mencionando el problema "BUG: descripción del 
 - [ ] Crear una base de conocimiento para el chatbot. @TSTXD777
 - [ ] Habilitar la búsqueda en la base de conocimiento. @TSTXD777
 - [ ] Almacenar datos en la base de conocimiento. @TSTXD777
+- [ ] Abel @Abel52080
+- [X] Stephany @stefanycarias
+- [ ] César @Jona-giron25
+- [ ] Jeymi @JCarcamo06
+- [X] Hyrum @TSTXD777
+
+# Archivo de TODO (Cosas por hacer)
+- [ ] Pensar en categorías para el TODO (ejemplo, Frontend, Backend, Database, etc.)
